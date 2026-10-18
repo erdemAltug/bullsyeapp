@@ -19,6 +19,14 @@ async function request<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+function withSparkline(items: ScannerItem[]): ScannerItem[] {
+  return items.map((item) => ({
+    ...item,
+    sparkline: item.sparkline ?? [],
+  }));
+}
+
+/** Hot tape: one array, no news. Terminal and non-BİST tabs use this. */
 export async function fetchMarketAggregate(): Promise<MarketAggregate> {
   const json = await request<{
     success: boolean;
@@ -31,12 +39,13 @@ export async function fetchMarketAggregate(): Promise<MarketAggregate> {
     news?: NewsItem[];
     updatedAt?: string;
     cached?: boolean;
-  }>('/api/market');
+  }>('/api/market?view=lite&extras=0');
 
   if (!json.success) throw new Error(json.error || 'Market fetch failed');
 
-  const items =
-    json.marketItems ?? json.markets ?? json.data?.items ?? [];
+  const items = withSparkline(
+    json.marketItems ?? json.markets ?? json.data?.items ?? []
+  );
 
   return {
     items,
@@ -46,6 +55,17 @@ export async function fetchMarketAggregate(): Promise<MarketAggregate> {
     updatedAt: json.updatedAt ?? new Date().toISOString(),
     cached: json.cached,
   };
+}
+
+/** Full BİST board. Separate from the 10s tape so the payload stays one category. */
+export async function fetchBistBoard(): Promise<ScannerItem[]> {
+  const json = await request<{
+    success: boolean;
+    error?: string;
+    marketItems?: ScannerItem[];
+  }>('/api/market?view=lite&category=BIST&scope=all&extras=0');
+  if (!json.success) throw new Error(json.error || 'BIST board failed');
+  return withSparkline(json.marketItems ?? []);
 }
 
 export async function fetchSignals(symbols?: string): Promise<TradeSignal[]> {

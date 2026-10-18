@@ -16,7 +16,7 @@ import {
 } from '@/components/market/MarketTopTabs';
 import { SortModal, type SortKey } from '@/components/market/SortModal';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useFxRates, useMarket, usePullToRefresh } from '@/hooks/useMarket';
+import { useBistBoard, useFxRates, useMarket, usePullToRefresh } from '@/hooks/useMarket';
 import { hapticSelection } from '@/lib/haptics';
 import type { ScannerItem } from '@/types/scanner';
 import type { FxRate } from '@/types';
@@ -45,15 +45,24 @@ function sortItems(items: ScannerItem[], key: SortKey): ScannerItem[] {
 }
 
 export default function MarketsScreen() {
+  const [tab, setTab] = useState<MarketTabKey>('BIST');
   const market = useMarket();
   const fx = useFxRates();
-  const { refreshing, onRefresh } = usePullToRefresh([['market'], ['fx']]);
-  const [tab, setTab] = useState<MarketTabKey>('BIST');
+  const board = useBistBoard(tab === 'BIST');
+  const { refreshing, onRefresh } = usePullToRefresh([
+    ['market'],
+    ['fx'],
+    ['market-board', 'BIST'],
+  ]);
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('change');
   const [sortOpen, setSortOpen] = useState(false);
 
-  const items = market.data?.items ?? [];
+  const scannerItems = market.data?.items ?? [];
+  const items =
+    tab === 'BIST' && board.data && board.data.length > 0
+      ? board.data
+      : scannerItems;
 
   const filtered = useMemo(() => {
     if (tab === 'FX') return [];
