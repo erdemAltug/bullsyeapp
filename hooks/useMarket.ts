@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import {
+  fetchBistBoard,
   fetchCalendar,
   fetchCompare,
   fetchDividends,
@@ -18,6 +19,17 @@ export function useMarket() {
     queryFn: fetchMarketAggregate,
     staleTime: MARKET_STALE_MS,
     refetchInterval: MARKET_POLL_MS,
+  });
+}
+
+/** Full BİST list. Slower than the tape; only the BİST tab should mount it. */
+export function useBistBoard(enabled = true) {
+  return useQuery({
+    queryKey: ['market-board', 'BIST'],
+    queryFn: fetchBistBoard,
+    enabled,
+    staleTime: 20_000,
+    refetchInterval: enabled ? 30_000 : false,
   });
 }
 
